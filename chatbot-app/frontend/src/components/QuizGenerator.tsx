@@ -47,27 +47,28 @@ const QuizGenerator = ({ onInteraction }: QuizGeneratorProps) => {
   };
 
   return (
-    <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+    <div className="space-y-4 rounded-2xl border border-slate-200 bg-white/5 backdrop-blur-xl p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/10">
       <div>
-        <h3 className="text-lg font-semibold">Quiz Generator</h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400">Upload a document to generate a quiz.</p>
+        <h3 className="text-lg font-semibold text-white">Quiz Generator</h3>
+        <p className="text-sm text-slate-400">Upload a document to generate a quiz.</p>
       </div>
       <FileUploader label="Upload quiz source" onUploaded={handleGenerate} />
-      {loading && <p className="text-sm text-slate-500">Generating quiz...</p>}
+      {loading && <p className="text-sm text-slate-400">Generating quiz...</p>}
       {quiz.length > 0 && quiz[0].options.length > 0 && (
         <div className="space-y-4">
           {quiz.map((item, index) => (
-            <div key={`${item.question}-${index}`} className="rounded-xl border border-slate-200 p-4 dark:border-slate-800">
-              <p className="text-sm font-semibold">{item.question}</p>
+            <div key={`${item.question}-${index}`} className="rounded-xl border border-slate-700/50 p-4 bg-slate-900/20">
+              <p className="text-sm font-semibold text-white">{item.question}</p>
               <div className="mt-3 space-y-2">
                 {item.options.map((option) => (
-                  <label key={option} className="flex items-center gap-2 text-sm">
+                  <label key={option} className="flex items-center gap-2 text-sm text-slate-200">
                     <input
                       type="radio"
                       name={`question-${index}`}
                       value={option}
                       checked={responses[index] === option}
                       onChange={() => setResponses({ ...responses, [index]: option })}
+                      className="text-cyan-500 focus:ring-cyan-500"
                     />
                     {option}
                   </label>
@@ -77,12 +78,12 @@ const QuizGenerator = ({ onInteraction }: QuizGeneratorProps) => {
           ))}
           <button
             onClick={handleSubmit}
-            className="rounded-full bg-neon px-4 py-2 text-sm font-semibold text-black"
+            className="rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 px-4 py-2 text-sm font-semibold text-white"
           >
             Submit Answers
           </button>
           {score !== null && (
-            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+            <p className="text-sm font-semibold text-slate-200">
               Your score: {score} / {quiz.length}
             </p>
           )}

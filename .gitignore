@@ -1,0 +1,26 @@
+# Node/Vite
+node_modules/
+dist/
+*.log
+
+# Frontend artifacts
+chatbot-app/frontend/node_modules/
+chatbot-app/frontend/dist/
+
+# Python venvs
+venv/
+.venv/
+chatbot-app/backend/venv/
+chatbot-app/backend/.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Environment files (DO NOT COMMIT SECRETS)
+chatbot-app/frontend/.env
+chatbot-app/backend/.env
+
+# IDE/editor
+.DS_Store
+.vscode/

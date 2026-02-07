@@ -1,0 +1,52 @@
+import requests
+from ..core.config import settings
+
+class LLMService:
+    def __init__(self):
+        self.api_url = "https://api-inference.huggingface.co/models/distilgpt2"
+        self.headers = {
+            "Authorization": f"Bearer {settings.hf_api_key}",
+            "Content-Type": "application/json"
+        }
+
+    def generate(self, prompt: str, max_tokens: int = 512) -> str:
+        payload = {
+            "inputs": prompt,
+            "parameters": {
+                "max_new_tokens": max_tokens,
+                "temperature": 0.2,
+                "top_p": 0.9,
+                "return_full_text": False
+            }
+        }
+        try:
+            response = requests.post(self.api_url, headers=self.headers, json=payload, timeout=90)
+            print(f"API Request: {self.api_url}")
+            print(f"Headers: {self.headers}")
+            print(f"Payload: {payload}")
+            print(f"Response Status: {response.status_code}")
+            print(f"Response Text: {response.text}")
+            response.raise_for_status()
+            data = response.json()
+            if isinstance(data, list) and data:
+                return data[0].get('generated_text', '').strip()
+            if isinstance(data, dict) and 'generated_text' in data:
+                return data['generated_text'].strip()
+            raise ValueError('Unexpected response from LLM provider')
+        except requests.exceptions.HTTPError as e:
+            print(f"HTTP Error: {e}")
+            print(f"Response content: {e.response.text if e.response else 'No response'}")
+            # Return a friendly error message instead of crashing
+            error_msg = "API service unavailable"
+            if e.response:
+                try:
+                    error_data = e.response.json()
+                    error_msg = error_data.get("error", error_msg)
+                except:
+                    error_msg = e.response.text[:100] if e.response.text else error_msg
+            return f"Sorry, I cannot process this request right now. {error_msg}"
+        except Exception as e:
+            print(f"General Error: {e}")
+            return "Sorry, I cannot process this request right now due to a technical issue."
+
+llm_service = LLMService()

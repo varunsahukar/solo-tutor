@@ -2,26 +2,29 @@ import { useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import Sidebar from '../components/Sidebar';
-import FileUploader from '../components/FileUploader';
 import ChatBox from '../components/ChatBox';
+import FeatureCard from '../components/FeatureCard';
+import FileUploader from '../components/FileUploader';
 import YouTubeAnalyzer from '../components/YouTubeAnalyzer';
 import CodeAnalyzer from '../components/CodeAnalyzer';
 import QuizGenerator from '../components/QuizGenerator';
+import Hero3DBackground from '../components/Hero3DBackground';
+import FloatingElements from '../components/FloatingElements';
+
 
 interface DashboardProps {
-  theme: 'light' | 'dark';
-  setTheme: (value: 'light' | 'dark') => void;
   session: Session | null;
 }
 
-const Dashboard = ({ theme, setTheme, session }: DashboardProps) => {
+const Dashboard = ({ session }: DashboardProps) => {
   const [history, setHistory] = useState<{ id: string; title: string; timestamp: string }[]>([]);
   const [documentId, setDocumentId] = useState<string | null>(null);
-  const [docStatus, setDocStatus] = useState<string>('');
+  const [activeFeature, setActiveFeature] = useState<string | null>(null);
 
   const addHistory = (title: string) => {
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     setHistory((prev) => [
-      { id: crypto.randomUUID(), title, timestamp: new Date().toLocaleString() },
+      { id: uniqueId, title, timestamp: new Date().toLocaleString() },
       ...prev
     ]);
   };
@@ -30,52 +33,74 @@ const Dashboard = ({ theme, setTheme, session }: DashboardProps) => {
     await supabase.auth.signOut();
   };
 
-  const handleDocumentUpload = async (payload: { path: string; fileName: string }) => {
-    setDocStatus('Processing document...');
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/document/process`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ file_path: payload.path, file_name: payload.fileName })
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || 'Failed to process document.');
-      setDocumentId(data.document_id);
-      setDocStatus(`Ready: ${payload.fileName}`);
-      addHistory(`Document uploaded: ${payload.fileName}`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Document processing failed.';
-      setDocStatus(message);
-    }
+  const handleFeatureSelect = (feature: string) => {
+    setActiveFeature(feature);
+    setDocumentId(null);
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-900 dark:bg-black dark:text-white">
-      <Sidebar history={history} session={session} onLogout={handleLogout} theme={theme} onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')} />
-      <main className="flex-1 space-y-8 px-10 py-8">
-        <header className="flex items-center justify-between">
+    <div className="flex h-screen bg-black text-white font-sans">
+      <Sidebar 
+        history={history}
+        session={session} 
+        onLogout={handleLogout} 
+      />
+      
+      <main className="relative flex-1 flex flex-col px-12 pt-28 pb-8">
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <Hero3DBackground />
+          <FloatingElements />
+        </div>
+        <header className="sticky top-0 z-20 w-full bg-black/80 backdrop-blur-sm flex justify-between items-center px-12 py-6">
           <div>
-            <h2 className="text-2xl font-semibold">Learning Dashboard</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Your centralized study control panel.</p>
+            <h1 className="text-3xl font-bold">USER'S SPACE</h1>
           </div>
-          <span className="rounded-full border border-neon px-3 py-1 text-xs uppercase tracking-[0.3em] text-neon">
-            {theme} mode
-          </span>
+          <div className="flex items-center space-x-4">
+            {activeFeature && (
+              <button
+                onClick={() => { setActiveFeature(null); setDocumentId(null); }}
+                className="px-4 py-2 rounded-lg border border-gray-700 hover:border-white hover:bg-gray-800 transition"
+              >
+                Back
+              </button>
+            )}
+          </div>
         </header>
-        <section className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
-          <div className="space-y-4">
-            <FileUploader label="Upload textbook" onUploaded={handleDocumentUpload} />
-            {docStatus && <p className="text-sm text-slate-500 dark:text-slate-400">{docStatus}</p>}
-            <ChatBox documentId={documentId} onInteraction={addHistory} />
+        
+        <div className="flex-1 flex flex-col items-center justify-start mt-6">
+          <div className="w-full max-w-4xl mx-auto">
+            {!activeFeature ? (
+              <>
+                <div className="text-center mb-8">
+                  <p className="text-gray-400">READY TO LEARN, {session?.user?.email || 'USER'}?</p>
+                </div>
+                <div className="bg-gray-900 border border-gray-700 rounded-2xl p-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <FeatureCard icon="" title="UPLOAD" subtitle="FILE, AUDIO, VIDEO" onClick={() => handleFeatureSelect('upload')} active={activeFeature === 'upload'} />
+                    <FeatureCard icon="" title="LINK" subtitle="YOUTUBE, WEBSITE" onClick={() => handleFeatureSelect('link')} active={activeFeature === 'link'} />
+                    <FeatureCard icon="" title="PASTE" subtitle="COPIED TEXT" onClick={() => handleFeatureSelect('paste')} active={activeFeature === 'paste'} />
+                    <FeatureCard icon="" title="QUIZ MAKER" subtitle="GENERATE ASSESSMENT" onClick={() => handleFeatureSelect('quiz')} active={activeFeature === 'quiz'} />
+                  </div>
+                </div>
+              </>
+            ) : activeFeature === 'upload' ? (
+              <div className="space-y-6">
+                <FileUploader label="Upload content" onUploaded={({ path }) => setDocumentId(path)} />
+                <div className="w-full h-[60vh] bg-gray-900 border border-gray-700 rounded-2xl p-6">
+                  <ChatBox documentId={documentId} onInteraction={addHistory} />
+                </div>
+              </div>
+            ) : activeFeature === 'link' ? (
+              <YouTubeAnalyzer onInteraction={addHistory} />
+            ) : activeFeature === 'paste' ? (
+              <CodeAnalyzer onInteraction={addHistory} />
+            ) : activeFeature === 'quiz' ? (
+              <QuizGenerator onInteraction={addHistory} />
+            ) : (
+              <div className="text-center text-gray-400">Feature coming soon</div>
+            )}
           </div>
-          <div className="space-y-6">
-            <YouTubeAnalyzer onInteraction={addHistory} />
-            <CodeAnalyzer onInteraction={addHistory} />
-          </div>
-        </section>
-        <section>
-          <QuizGenerator onInteraction={addHistory} />
-        </section>
+        </div>
       </main>
     </div>
   );

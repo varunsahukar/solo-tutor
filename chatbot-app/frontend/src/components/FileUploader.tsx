@@ -18,7 +18,9 @@ const FileUploader = ({ label, onUploaded }: FileUploaderProps) => {
     setUploading(true);
     setError(null);
     try {
-      const filePath = `${crypto.randomUUID()}-${file.name}`;
+      // Generate a unique ID using timestamp and random number to ensure uniqueness
+      const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const filePath = `${uniqueId}-${file.name}`;
       const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file, {
         cacheControl: '3600',
         upsert: false
@@ -35,20 +37,20 @@ const FileUploader = ({ label, onUploaded }: FileUploaderProps) => {
   };
 
   return (
-    <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+    <div className="space-y-3 rounded-2xl border border-slate-200 bg-white/5 backdrop-blur-xl p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/10">
       <div>
-        <h3 className="text-lg font-semibold">{label}</h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400">PDF, DOCX, or TXT.</p>
+        <h3 className="text-lg font-semibold text-white">{label}</h3>
+        <p className="text-sm text-slate-400">PDF, DOCX, or TXT.</p>
       </div>
       <input
         type="file"
         accept=".pdf,.docx,.txt"
         onChange={handleUpload}
-        className="w-full cursor-pointer rounded-lg border border-dashed border-slate-300 px-4 py-3 text-sm dark:border-slate-700"
+        className="w-full cursor-pointer rounded-lg border border-dashed border-slate-600/50 bg-slate-900/30 px-4 py-3 text-sm text-white placeholder-slate-400"
       />
-      {uploading && <p className="text-xs text-slate-500">Uploading...</p>}
-      {fileName && <p className="text-xs text-slate-500">Uploaded: {fileName}</p>}
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {uploading && <p className="text-xs text-slate-400">Uploading...</p>}
+      {fileName && <p className="text-xs text-slate-400">Uploaded: {fileName}</p>}
+      {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
   );
 };

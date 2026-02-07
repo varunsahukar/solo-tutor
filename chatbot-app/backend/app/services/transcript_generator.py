@@ -1,8 +1,6 @@
 from typing import Optional
 from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
 from pytube import YouTube
-from faster_whisper import WhisperModel
 import tempfile
 import os
 
@@ -19,7 +17,7 @@ def fetch_transcript(video_id: str) -> Optional[str]:
     try:
         transcript = YouTubeTranscriptApi.get_transcript(video_id)
         return ' '.join([segment['text'] for segment in transcript])
-    except (TranscriptsDisabled, NoTranscriptFound):
+    except Exception:
         return None
 
 
@@ -30,6 +28,10 @@ def transcribe_audio(url: str) -> str:
         raise ValueError('No audio stream available')
     with tempfile.TemporaryDirectory() as tmpdir:
         audio_path = stream.download(output_path=tmpdir, filename='audio')
+        try:
+            from faster_whisper import WhisperModel
+        except Exception as e:
+            raise RuntimeError('Audio transcription requires faster_whisper and FFmpeg (PyAV) installed. ' + str(e))
         model = WhisperModel('base', device='cpu', compute_type='int8')
         segments, _ = model.transcribe(audio_path)
         transcript = ' '.join([segment.text for segment in segments])

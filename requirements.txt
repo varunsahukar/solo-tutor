@@ -1,0 +1,3 @@
+supabase==2.27.3
+supabase-auth==2.27.3
+supabase-functions==2.27.3

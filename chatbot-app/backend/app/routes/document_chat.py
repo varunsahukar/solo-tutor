@@ -31,12 +31,22 @@ async def process_document(payload: DocumentProcessRequest):
     if not text.strip():
         raise HTTPException(status_code=400, detail='No text extracted from document')
 
-    doc_response = supabase.table('documents').insert({
-        'file_name': payload.file_name,
-        'file_path': payload.file_path
-    }).execute()
+    try:
+        doc_response = supabase.table('documents').insert({
+            'file_name': payload.file_name,
+            'file_path': payload.file_path
+        }).execute()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f'Failed to insert document record: {str(exc)}')
 
-    document_id = doc_response.data[0]['id']
+    if not doc_response.data or len(doc_response.data) == 0:
+        raise HTTPException(status_code=500, detail='Failed to create document record')
+    
+    document_record = doc_response.data[0]
+    if not isinstance(document_record, dict) or 'id' not in document_record:
+        raise HTTPException(status_code=500, detail='Invalid document record format')
+    
+    document_id = document_record['id']
 
     chunks = chunk_text(text)
     chunk_records = []
@@ -50,7 +60,12 @@ async def process_document(payload: DocumentProcessRequest):
         })
 
     if chunk_records:
-        supabase.table('document_chunks').insert(chunk_records).execute()
+        try:
+            supabase.table('document_chunks').insert(chunk_records).execute()
+        except Exception as exc:
+            # Clean up the document record if chunk insertion fails
+            supabase.table('documents').delete().eq('id', document_id).execute()
+            raise HTTPException(status_code=400, detail=f'Failed to insert document chunks: {str(exc)}')
 
     return {'document_id': document_id}
 
@@ -71,8 +86,14 @@ async def document_chat(payload: DocumentChatRequest):
     question_embedding = embedding_service.embed(payload.question)
     scored = []
     for chunk in chunks:
-        score = cosine_similarity(question_embedding, chunk['embedding'])
-        scored.append((score, chunk['content']))
+        if isinstance(chunk, dict) and 'embedding' in chunk and 'content' in chunk:
+            embedding = chunk['embedding']
+            content = chunk['content']
+            if isinstance(embedding, list) and isinstance(content, str):
+                # Convert embedding to list of floats if needed
+                float_embedding = [float(x) if isinstance(x, (int, float)) else 0.0 for x in embedding]
+                score = cosine_similarity(question_embedding, float_embedding)
+                scored.append((score, content))
     scored.sort(key=lambda item: item[0], reverse=True)
     context = '\n\n'.join([item[1] for item in scored[:3]])
 
@@ -83,10 +104,19 @@ async def document_chat(payload: DocumentChatRequest):
     )
 
     answer = llm_service.generate(prompt, max_tokens=300)
-    supabase.table('chat_history').insert({
-        'document_id': payload.document_id,
-        'question': payload.question,
-        'answer': answer
-    }).execute()
+    try:
+        supabase.table('chat_history').insert({
+            'document_id': payload.document_id,
+            'question': payload.question,
+            'answer': answer
+        }).execute()
+    except Exception as exc:
+        # Log the error but don't fail the response
+        print(f'Warning: Could not save chat history: {str(exc)}')
 
     return {'answer': answer}
+
+
+
+
+

@@ -55,11 +55,10 @@ const YouTubeAnalyzer = ({ onInteraction }: YouTubeAnalyzerProps) => {
   };
 
   return (
-    <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+    <div className="space-y-4 rounded-2xl border border-slate-200 bg-white/5 backdrop-blur-xl p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/10">
       <div>
-        <h3 className="text-lg font-semibold">YouTube Analyzer</h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Paste a YouTube URL to summarize the content.
+        <h3 className="text-lg font-semibold text-white">YouTube Analyzer</h3>
+ <p className="text-sm text-gray-400">   Paste a YouTube URL to summarize the content.
         </p>
       </div>
       <div className="flex flex-col gap-3">
@@ -67,18 +66,16 @@ const YouTubeAnalyzer = ({ onInteraction }: YouTubeAnalyzerProps) => {
           value={url}
           onChange={(event) => setUrl(event.target.value)}
           placeholder="https://www.youtube.com/watch?v=..."
-          className="rounded-full border border-slate-200 px-4 py-2 text-sm dark:border-slate-700 dark:bg-black"
-        />
+    className="rounded-lg border border-gray-700 bg-black/40 px-4 py-2 text-sm text-white placeholder-gray-500"        />
         <button
           onClick={handleAnalyze}
-          className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white transition hover:opacity-80 dark:bg-white dark:text-black"
-        >
+    className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-semibold text-white hover:border-white hover:bg-gray-800 transition"        >
           {loading ? 'Analyzing...' : 'Analyze Video'}
         </button>
       </div>
       {summary && (
-        <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 dark:border-slate-800 dark:bg-black dark:text-slate-200">
-          <p className="whitespace-pre-line">{summary}</p>
+<div className="space-y-3 rounded-xl border border-gray-700 bg-gray-900 p-4 text-sm text-gray-200">
+            <p className="whitespace-pre-line">{summary}</p>
         </div>
       )}
       <div className="space-y-3">
@@ -86,11 +83,10 @@ const YouTubeAnalyzer = ({ onInteraction }: YouTubeAnalyzerProps) => {
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
           placeholder="Ask a follow-up question"
-          className="w-full rounded-full border border-slate-200 px-4 py-2 text-sm dark:border-slate-700 dark:bg-black"
-        />
+ className="w-full rounded-lg border border-gray-700 bg-black/40 px-4 py-2 text-sm text-white placeholder-gray-500"        />
         <button
           onClick={handleFollowUp}
-          className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold transition hover:border-neon hover:text-neon dark:border-slate-700"
+          className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-semibold text-white hover:border-white hover:bg-gray-800 transition disabled:opacity-50"
           disabled={!analysisId || loading}
         >
           Ask follow-up
