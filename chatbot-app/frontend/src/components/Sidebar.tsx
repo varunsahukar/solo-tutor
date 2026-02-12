@@ -121,16 +121,8 @@ const Sidebar = ({ session, onLogout }: SidebarProps) => {
   );
 };
 
-const NavItem = ({ icon, text }: { icon: string; text: string }) => (
-  <li>
-    <a href="#" className="flex items-center text-gray-400 hover:text-white">
-      <span className="text-lg mr-4">{icon}</span>
-      <span className="font-medium">{text}</span>
-    </a>
-  </li>
-);
-
 export function HeroSection() {
+
   return (
     <div className="relative min-h-screen bg-black overflow-hidden">
       <Hero3DBackground />
