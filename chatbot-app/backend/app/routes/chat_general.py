@@ -10,10 +10,9 @@ class GeneralChatRequest(BaseModel):
 @router.post('/general')
 async def general_chat(payload: GeneralChatRequest):
     try:
-        # Create a prompt for general conversation
         prompt = f"You are a helpful AI assistant. Respond to the following message: {payload.message}"
         
-        response = llm_service.generate(prompt, max_tokens=300)
+        response = await llm_service.generate(prompt, max_tokens=300)
         
         return {'response': response}
     except Exception as exc:

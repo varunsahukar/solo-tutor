@@ -1,6 +1,9 @@
 import { useState } from 'react';
 
 const API = import.meta.env.VITE_API_BASE_URL;
+// ...
+if (!API) { throw new Error('API base URL not configured (VITE_API_BASE_URL).'); }
+const endpoint = `${API}/code/analyze`;
 
 interface CodeAnalyzerProps {
   onInteraction: (title: string) => void;
@@ -15,10 +18,7 @@ const CodeAnalyzer = ({ onInteraction }: CodeAnalyzerProps) => {
     if (!input.trim()) return;
     setLoading(true);
     try {
-      if (!API) {
-        throw new Error('API base URL not configured (VITE_API_BASE_URL).');
-      }
-      const endpoint = `${API}/code/analyze`;
+
       const result = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -32,7 +32,7 @@ const CodeAnalyzer = ({ onInteraction }: CodeAnalyzerProps) => {
       }
       const explanation = typeof data === 'string' ? data : data.explanation;
       setResponse(explanation || 'No explanation returned.');
-      onInteraction('Code analysis');
+      onInteraction('Code analysis: ' + (explanation?.substring(0, 50) || 'No explanation') );
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Network error.';
       setResponse(`Sorry, I encountered an error: ${message}`);

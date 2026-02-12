@@ -1,30 +1,23 @@
-import hashlib
+from sentence_transformers import SentenceTransformer
 import numpy as np
 from ..core.config import settings
 
 class EmbeddingService:
     def __init__(self):
-        # Simple hash-based embedding for demonstration
-        # In production, you would want to use a proper embedding model
-        pass
+        try:
+            self.model = SentenceTransformer(settings.embedding_model)
+            print(f"Loaded embedding model: {settings.embedding_model}")
+        except Exception as e:
+            print(f"Failed to load embedding model: {e}")
+            self.model = None
 
     def embed(self, text: str) -> list[float]:
-        # Simple hash-based approach - not ideal for real use
-        # This is just to get the system working
-        hash_object = hashlib.md5(text.encode())
-        hash_hex = hash_object.hexdigest()
-        # Convert hex to float vector (384 dimensions to match typical embedding size)
-        vector = []
-        for i in range(0, min(len(hash_hex), 384*2), 2):
-            byte_val = int(hash_hex[i:i+2], 16)
-            # Normalize to [-1, 1]
-            normalized = (byte_val / 127.5) - 1.0
-            vector.append(normalized)
+        if not self.model:
+            # Fallback to random vector if model fails to load (for testing only)
+            return np.random.rand(384).tolist()
         
-        # Pad to 384 dimensions if needed
-        while len(vector) < 384:
-            vector.append(0.0)
-        
-        return vector[:384]
+        embedding = self.model.encode(text)
+        return embedding.tolist()
 
 embedding_service = EmbeddingService()
+

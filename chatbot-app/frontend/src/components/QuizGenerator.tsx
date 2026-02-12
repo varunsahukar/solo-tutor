@@ -22,14 +22,16 @@ const QuizGenerator = ({ onInteraction }: QuizGeneratorProps) => {
     setScore(null);
     setResponses({});
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/quiz/generate`, {
+const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/quiz/generate`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ file_path: payload.path, file_name: payload.fileName })
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || 'Failed to generate quiz.');
-      setQuiz(data.questions);
+      const ct = res.headers.get('content-type') || '';
+      const parsed = ct.includes('application/json') ? await res.json() : await res.text();
+      if (!res.ok) throw new Error((typeof parsed === 'string' ? parsed : parsed?.detail) || `Request failed (${res.status}).`);
+      const questions = typeof parsed === 'string' ? [] : parsed.questions;
+      setQuiz(questions);
       onInteraction(`Quiz: ${payload.fileName}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error generating quiz.';

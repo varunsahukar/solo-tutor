@@ -11,6 +11,15 @@ router = APIRouter(prefix='/document', tags=['document'])
 
 supabase = create_client(settings.supabase_url, settings.supabase_service_role_key)
 
+def cosine_similarity(vec_a: list[float], vec_b: list[float]) -> float:
+    a = np.array(vec_a)
+    b = np.array(vec_b)
+    norm_a = np.linalg.norm(a)
+    norm_b = np.linalg.norm(b)
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return float(np.dot(a, b) / (norm_a * norm_b))
+
 @router.post('/process')
 async def process_document(payload: DocumentProcessRequest):
     file_extension = payload.file_name.split('.')[-1].lower()
@@ -65,15 +74,9 @@ async def process_document(payload: DocumentProcessRequest):
         except Exception as exc:
             # Clean up the document record if chunk insertion fails
             supabase.table('documents').delete().eq('id', document_id).execute()
-            raise HTTPException(status_code=400, detail=f'Failed to insert document chunks: {str(exc)}')
+            raise HTTPException(status_code=500, detail=f'Failed to insert document chunks: {str(exc)}')
 
     return {'document_id': document_id}
-
-
-def cosine_similarity(vec_a: list[float], vec_b: list[float]) -> float:
-    a = np.array(vec_a)
-    b = np.array(vec_b)
-    return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-10))
 
 
 @router.post('/chat')
@@ -94,8 +97,11 @@ async def document_chat(payload: DocumentChatRequest):
                 float_embedding = [float(x) if isinstance(x, (int, float)) else 0.0 for x in embedding]
                 score = cosine_similarity(question_embedding, float_embedding)
                 scored.append((score, content))
+    
     scored.sort(key=lambda item: item[0], reverse=True)
-    context = '\n\n'.join([item[1] for item in scored[:3]])
+    # Get top 3 chunks
+    top_chunks = [item[1] for item in scored[:3]]
+    context = '\n\n'.join(top_chunks)
 
     prompt = (
         "You are a study assistant. Answer the question using ONLY the context provided. "
@@ -103,7 +109,7 @@ async def document_chat(payload: DocumentChatRequest):
         f"Context:\n{context}\n\nQuestion: {payload.question}\nAnswer:"
     )
 
-    answer = llm_service.generate(prompt, max_tokens=300)
+    answer = await llm_service.generate(prompt, max_tokens=300)
     try:
         supabase.table('chat_history').insert({
             'document_id': payload.document_id,
@@ -111,12 +117,6 @@ async def document_chat(payload: DocumentChatRequest):
             'answer': answer
         }).execute()
     except Exception as exc:
-        # Log the error but don't fail the response
-        print(f'Warning: Could not save chat history: {str(exc)}')
+        print(f"Warning: Failed to save chat history: {exc}")
 
     return {'answer': answer}
-
-
-
-
-

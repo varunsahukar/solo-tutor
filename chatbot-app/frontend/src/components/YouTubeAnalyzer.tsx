@@ -15,16 +15,21 @@ const YouTubeAnalyzer = ({ onInteraction }: YouTubeAnalyzerProps) => {
     if (!url.trim()) return;
     setLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/youtube/analyze`, {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/youtube/analyze`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || 'Unable to analyze video.');
-      setSummary(data.summary);
-      setAnalysisId(data.analysis_id);
-      onInteraction(`YouTube: ${data.title || 'Video analysis'}`);
+      const ct = res.headers.get('content-type') || '';
+      const parsed = ct.includes('application/json') ? await res.json() : await res.text();
+      if (!res.ok) {
+        const detail = typeof parsed === 'string' ? parsed : parsed?.detail;
+        throw new Error(detail || `Request failed (${res.status}).`);
+      }
+      const summary = typeof parsed === 'string' ? parsed : parsed.summary;
+      setSummary(summary);
+      setAnalysisId(typeof parsed === 'string' ? null : parsed.analysis_id);
+      onInteraction(`YouTube: ${parsed.title || 'Video analysis'}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error analyzing video.';
       setSummary(message);
@@ -37,14 +42,19 @@ const YouTubeAnalyzer = ({ onInteraction }: YouTubeAnalyzerProps) => {
     if (!question.trim() || !analysisId) return;
     setLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/youtube/follow-up`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/youtube/follow-up`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ analysis_id: analysisId, question })
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || 'Unable to answer follow-up.');
-      setSummary(`${summary}\n\nFollow-up answer:\n${data.answer}`);
+      const ct = res.headers.get('content-type') || '';
+      const parsed = ct.includes('application/json') ? await res.json() : await res.text();
+      if (!res.ok) {
+        const detail = typeof parsed === 'string' ? parsed : parsed?.detail;
+        throw new Error(detail || `Request failed (${res.status}).`);
+      }
+      const answer = typeof parsed === 'string' ? parsed : parsed.answer;
+      setSummary(`${summary}\n\nFollow-up answer:\n${answer}`);
       setQuestion('');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error answering follow-up.';

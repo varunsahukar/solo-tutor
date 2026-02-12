@@ -53,7 +53,7 @@ const Dashboard = ({ session }: DashboardProps) => {
         </div>
         <header className="sticky top-0 z-20 w-full bg-black/80 backdrop-blur-sm flex justify-between items-center px-12 py-6">
           <div>
-            <h1 className="text-3xl font-bold">USER'S SPACE</h1>
+            <h1 className="text-3xl font-bold">{(((session?.user?.user_metadata?.first_name || '') + ' ' + (session?.user?.user_metadata?.last_name || '')).trim() || (session?.user?.email?.split('@')[0] || 'USER'))}'S SPACE</h1>
           </div>
           <div className="flex items-center space-x-4">
             {activeFeature && (
@@ -72,7 +72,7 @@ const Dashboard = ({ session }: DashboardProps) => {
             {!activeFeature ? (
               <>
                 <div className="text-center mb-8">
-                  <p className="text-gray-400">READY TO LEARN, {session?.user?.email || 'USER'}?</p>
+                  <p className="text-gray-400">READY TO LEARN, {(((session?.user?.user_metadata?.first_name || '') + ' ' + (session?.user?.user_metadata?.last_name || '')).trim() || (session?.user?.email?.split('@')[0] || 'USER'))}?</p>
                 </div>
                 <div className="bg-gray-900 border border-gray-700 rounded-2xl p-8">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -85,10 +85,30 @@ const Dashboard = ({ session }: DashboardProps) => {
               </>
             ) : activeFeature === 'upload' ? (
               <div className="space-y-6">
-                <FileUploader label="Upload content" onUploaded={({ path }) => setDocumentId(path)} />
+                <FileUploader label="Upload content" onUploaded={async ({ path, fileName }) => {
+                  try {
+                    const api = import.meta.env.VITE_API_BASE_URL; // '/api'
+                    // ...
+                    const res = await fetch(`${api}/document/process`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ file_path: path, file_name: fileName })
+                    });
+                    const ct = res.headers.get('content-type') || '';
+                    const parsed = ct.includes('application/json') ? await res.json() : await res.text();
+                    if (!res.ok) {
+                      const detail = typeof parsed === 'string' ? parsed : parsed?.detail;
+                      throw new Error(detail || `Request failed (${res.status}).`);
+                    }
+                    const docId = typeof parsed === 'string' ? null : parsed.document_id;
+                    setDocumentId(docId || null);
+                  } catch (err) {
+                    console.error(err);
+                    setDocumentId(null);
+                  }
+                }} />
                 <div className="w-full h-[60vh] bg-gray-900 border border-gray-700 rounded-2xl p-6">
-                  <ChatBox documentId={documentId} onInteraction={addHistory} />
-                </div>
+<ChatBox documentId={documentId} onInteraction={addHistory} />                </div>
               </div>
             ) : activeFeature === 'link' ? (
               <YouTubeAnalyzer onInteraction={addHistory} />

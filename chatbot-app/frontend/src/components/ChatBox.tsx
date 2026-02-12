@@ -45,16 +45,19 @@ const ChatBox = ({ documentId, onInteraction }: ChatBoxProps) => {
     setInput('');
     setLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/document/chat`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/document/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ document_id: documentId, question: newMessage.content })
       });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.detail || 'Failed to answer question.');
+      const ct = res.headers.get('content-type') || '';
+      const parsed = ct.includes('application/json') ? await res.json() : await res.text();
+      if (!res.ok) {
+        const detail = typeof parsed === 'string' ? parsed : parsed?.detail;
+        throw new Error(detail || `Request failed (${res.status}).`);
       }
-      const assistantMessage: ChatMessage = { role: 'assistant', content: data.answer };
+      const answer = typeof parsed === 'string' ? parsed : parsed.answer;
+      const assistantMessage: ChatMessage = { role: 'assistant', content: answer };
       setMessages([...updatedMessages, assistantMessage]);
       onInteraction(`Doc Q&A: ${newMessage.content.slice(0, 40)}...`);
     } catch (err) {

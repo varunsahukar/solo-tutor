@@ -10,7 +10,6 @@ from .routes.chat_general import router as chat_router
 app = FastAPI(title='AI Learning Assistant API')
 
 origins = [origin.strip() for origin in settings.cors_origins.split(',') if origin.strip()]
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins or ['*'],

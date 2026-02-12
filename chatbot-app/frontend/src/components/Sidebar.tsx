@@ -10,7 +10,18 @@ interface SidebarProps {
   onLogout: () => Promise<void>;
 }
 
+const SpaceItem = ({ text, active = false }: { text: string; active?: boolean }) => (
+
+
+  <li className={`flex items-center p-2 rounded-lg cursor-pointer ${active ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}>
+    <span className="w-2 h-2 bg-gray-600 rounded-full mr-3"></span>
+    <span className="text-sm font-medium">{text}</span>
+  </li>
+);
+
+
 const Sidebar = ({ session, onLogout }: SidebarProps) => {
+
   const [isUserMenuOpen, setUserMenuOpen] = useState(false);
   const [spaces, setSpaces] = useState<{ id: string; name: string }[]>([]);
   const [spacesError, setSpacesError] = useState<string | null>(null);
@@ -51,7 +62,7 @@ const Sidebar = ({ session, onLogout }: SidebarProps) => {
               <div className="text-xs text-red-400 mb-2">{spacesError}</div>
             )}
             <ul className="space-y-2">
-              <SpaceItem text="USER'S SPACE" active />
+              <SpaceItem text={`${(((session?.user?.user_metadata?.first_name || '') + ' ' + (session?.user?.user_metadata?.last_name || '')).trim() || (session?.user?.email?.split('@')[0] || 'USER'))}'S SPACE`} active />
               {spaces.map((s) => (
                 <SpaceItem key={s.id} text={s.name} />
               ))}
@@ -80,10 +91,10 @@ const Sidebar = ({ session, onLogout }: SidebarProps) => {
               className="w-full flex items-center text-left p-3 bg-gray-900 rounded-lg hover:bg-gray-800"
             >
               <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center font-bold text-black mr-3">
-                {(session?.user?.email?.[0] || 'U').toUpperCase()}
+                {((((session?.user?.user_metadata?.first_name || '') + ' ' + (session?.user?.user_metadata?.last_name || '')).trim() || (session?.user?.email?.split('@')[0] || 'U'))[0] || 'U').toUpperCase()}
               </div>
               <div className="flex-1">
-                <p className="font-bold text-sm">{session?.user?.email || 'Guest'}</p>
+                <p className="font-bold text-sm">{(((session?.user?.user_metadata?.first_name || '') + ' ' + (session?.user?.user_metadata?.last_name || '')).trim() || (session?.user?.email?.split('@')[0] || 'Guest'))}</p>
                 <p className="text-xs text-gray-400">{session ? 'Signed in' : 'Not signed in'}</p>
               </div>
               <svg className={`w-5 h-5 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
@@ -93,7 +104,7 @@ const Sidebar = ({ session, onLogout }: SidebarProps) => {
             {isUserMenuOpen && (
               <div className="absolute bottom-full mb-2 w-full bg-gray-800 rounded-lg shadow-lg">
                 <div className="px-4 py-2 text-sm text-gray-300 border-b border-gray-700">
-                  <div>{session?.user?.email || 'Guest'}</div>
+                  <div>{(((session?.user?.user_metadata?.first_name || '') + ' ' + (session?.user?.user_metadata?.last_name || '')).trim() || (session?.user?.email?.split('@')[0] || 'Guest'))}</div>
                   <div className="text-xs text-gray-400">{session?.user?.id || ''}</div>
                 </div>
                 <a href="#" className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">Profile</a>
@@ -118,13 +129,7 @@ const NavItem = ({ icon, text }: { icon: string; text: string }) => (
     </a>
   </li>
 );
-const SpaceItem = ({ text, active = false }: { text: string; active?: boolean }) => (
-  <li>
-    <button className={`w-full text-left flex items-center p-2 rounded-md ${active ? 'bg-green-500 text-black' : 'text-gray-400 hover:bg-gray-800'}`}>
-      <span className="font-bold">{text}</span>
-    </button>
-  </li>
-);
+
 export function HeroSection() {
   return (
     <div className="relative min-h-screen bg-black overflow-hidden">

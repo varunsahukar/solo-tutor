@@ -11,17 +11,20 @@ supabase = create_client(settings.supabase_url, settings.supabase_service_role_k
 
 @router.post('/analyze')
 async def analyze_video(payload: YouTubeAnalysisRequest):
+    if not payload.url:
+        raise HTTPException(status_code=400, detail="URL is required")
+
     video_id = extract_video_id(payload.url)
     
-    # For now, provide a basic analysis without transcript
-    # This avoids the YouTube transcript API issues
+    # Prompt for summary
     prompt = (
         "Provide a general analysis of a YouTube video based on the URL. "
         "Since I cannot access the actual transcript, provide a structured academic-style summary "
         "with key topics, main arguments, and 3 bullet insights about what this type of video typically covers.\n\n"
         f"Video URL: {payload.url}\n\nAnalysis:"
     )
-    summary = llm_service.generate(prompt, max_tokens=400)
+    
+    summary = await llm_service.generate(prompt, max_tokens=400)
 
     try:
         record = supabase.table('youtube_analysis').insert({
@@ -30,43 +33,29 @@ async def analyze_video(payload: YouTubeAnalysisRequest):
             'summary': summary
         }).execute()
         
-        if record.data and len(record.data) > 0:
-            analysis_record = record.data[0]
-            if isinstance(analysis_record, dict) and 'id' in analysis_record:
-                analysis_id = analysis_record['id']
-            else:
-                analysis_id = 'temp-id-not-saved'
-        else:
-            analysis_id = 'temp-id-not-saved'
+        analysis_id = record.data[0]['id'] if record.data else 'temp-id'
     except Exception as exc:
-        # If RLS prevents insertion, return results without saving to DB
-        print(f'Warning: Could not save YouTube analysis to database: {str(exc)}')
-        analysis_id = 'temp-id-not-saved'
+        print(f'Warning: DB Error: {exc}')
+        analysis_id = 'temp-id'
     
     return {'analysis_id': analysis_id, 'summary': summary, 'title': payload.url}
-
-
 
 @router.post('/follow-up')
 async def youtube_follow_up(payload: YouTubeFollowUpRequest):
     try:
         record = supabase.table('youtube_analysis').select('*').eq('id', payload.analysis_id).single().execute()
         if not record.data:
-            raise HTTPException(status_code=404, detail='Analysis not found.')
+            raise HTTPException(status_code=404, detail='Analysis context not found.')
         
-        analysis_data = record.data
-        if isinstance(analysis_data, dict) and 'transcript' in analysis_data:
-            transcript = analysis_data['transcript']
-            if not isinstance(transcript, str):
-                raise HTTPException(status_code=404, detail='Transcript not found in analysis.')
-        else:
-            raise HTTPException(status_code=404, detail='Transcript not found in analysis.')
-    except Exception as exc:
-        raise HTTPException(status_code=404, detail='Analysis not found.')
+        transcript = record.data.get('transcript', '') or record.data.get('summary', '')
+    except Exception:
+        raise HTTPException(status_code=404, detail='Analysis context not found.')
 
     prompt = (
-        "Answer the question using the transcript context. If the transcript does not contain the answer, say so.\n\n"
-        f"Transcript:\n{transcript[:6000]}\n\nQuestion: {payload.question}\nAnswer:"
+        "Answer the question using the context below. If the answer isn't there, say so.\n\n"
+        f"Context:\n{transcript[:6000]}\n\nQuestion: {payload.question}\nAnswer:"
     )
-    answer = llm_service.generate(prompt, max_tokens=200)
+    
+    answer = await llm_service.generate(prompt, max_tokens=200)
     return {'answer': answer}
+

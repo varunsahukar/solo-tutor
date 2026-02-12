@@ -6,6 +6,7 @@ import os
 
 
 def extract_video_id(url: str) -> str:
+    """Extracts the YouTube video ID from a URL."""
     if 'v=' in url:
         return url.split('v=')[1].split('&')[0]
     if 'youtu.be/' in url:
@@ -14,25 +15,34 @@ def extract_video_id(url: str) -> str:
 
 
 def fetch_transcript(video_id: str) -> Optional[str]:
+    """Fetches the transcript for a given video ID using YouTubeTranscriptApi."""
     try:
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
-        return ' '.join([segment['text'] for segment in transcript])
+        transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+        return ' '.join([item['text'] for item in transcript_list])
     except Exception:
         return None
 
 
 def transcribe_audio(url: str) -> str:
-    yt = YouTube(url)
-    stream = yt.streams.filter(only_audio=True).first()
-    if stream is None:
-        raise ValueError('No audio stream available')
-    with tempfile.TemporaryDirectory() as tmpdir:
-        audio_path = stream.download(output_path=tmpdir, filename='audio')
-        try:
-            from faster_whisper import WhisperModel
-        except Exception as e:
-            raise RuntimeError('Audio transcription requires faster_whisper and FFmpeg (PyAV) installed. ' + str(e))
-        model = WhisperModel('base', device='cpu', compute_type='int8')
-        segments, _ = model.transcribe(audio_path)
-        transcript = ' '.join([segment.text for segment in segments])
-    return transcript
+    """Downloads audio from a YouTube video and transcribes it using Whisper."""
+    try:
+        yt = YouTube(url)
+        stream = yt.streams.filter(only_audio=True).first()
+        if stream is None:
+            return "No audio stream available."
+            
+        with tempfile.TemporaryDirectory() as tmpdir:
+            audio_path = stream.download(output_path=tmpdir, filename='audio')
+            
+            # Lazy import to avoid startup errors if dependencies are missing
+            try:
+                from faster_whisper import WhisperModel
+            except ImportError:
+                return "Transcription unavailable: faster_whisper not installed."
+                
+            model = WhisperModel('base', device='cpu', compute_type='int8')
+            segments, _ = model.transcribe(audio_path)
+            transcript = ' '.join([segment.text for segment in segments])
+            return transcript
+    except Exception as e:
+        return f"Transcription failed: {str(e)}"
