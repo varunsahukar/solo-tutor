@@ -5,8 +5,8 @@ A production-ready full-stack learning assistant that lets authenticated users u
 
 ## Architecture
 - **Frontend**: React (Vite) + Tailwind CSS + React Three Fiber (3D login background)
-- **Backend**: FastAPI with service-layer abstractions
-- **Auth & Storage**: Supabase Auth, Supabase Storage
+- **Backend**: FastAPI with service-layer abstractions.
+- **Auth & Storage**: Supabase Auth, Supabase Storage.
 - **LLM/Embeddings**: Hugging Face Inference API (swap via environment variables)
 
 ## Project Structure
