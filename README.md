@@ -1,4 +1,4 @@
-# AI-Powered Learning Assistant for Textbooks, Code, and Videos
+# AI-Powered Learning Assistant for Textbooks, Code, and Videos.
 
 ## Overview
 A production-ready full-stack learning assistant that lets authenticated users upload documents, chat with their content, analyze YouTube videos, explain code, and generate quizzes. The system uses a modular FastAPI backend, Supabase Auth + Storage + Postgres, and a Vite + React + Tailwind frontend.
