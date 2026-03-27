@@ -37,7 +37,7 @@ chatbot-app/
    ```
 
 ### Supabase Tables
-Create the following tables in Supabase (SQL editor). Enable Row Level Security (RLS).
+Create the following tables in Supabase (SQL editor). Enable Row Level Security (RLS)
 
 ```sql
 create table users (
